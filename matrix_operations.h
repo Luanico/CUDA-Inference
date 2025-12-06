@@ -1,1 +1,1 @@
-void matrix_add(float *A, float *B, float *Result);
+__global__ void matrix_add(float *A, float *B, float *Result, int width, int height, ssize_t pitch_A, ssize_t pitch_B, ssize_t pitch_Result);
