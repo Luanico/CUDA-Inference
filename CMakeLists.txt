@@ -31,24 +31,45 @@ enable_testing()
 add_library(matrix_ops STATIC
   matrix_operations.cu
   cpu_operations.cpp
+  mlp.cu
 )
 
 target_link_libraries(matrix_ops PUBLIC spdlog::spdlog)
 set_target_properties(matrix_ops PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
+add_library(utils STATIC
+  error_utils.cu
+)
+
+target_link_libraries(utils PUBLIC spdlog::spdlog)
+set_target_properties(utils PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+
 # Main executable
 add_executable(out main.cu)
-target_link_libraries(out PRIVATE matrix_ops spdlog::spdlog)
+target_link_libraries(out PRIVATE matrix_ops utils spdlog::spdlog)
 set_target_properties(out PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-# Test executable
+
+# Test 1: Basic matrix operations
 add_executable(matrix_tests basic_operations_test.cu)
 target_link_libraries(matrix_tests PRIVATE 
   matrix_ops
+  utils
   GTest::gtest_main
 )
 set_target_properties(matrix_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
+# Test 2: MLP
+add_executable(mlp_tests MLP_test.cu)
+target_link_libraries(mlp_tests PRIVATE 
+    matrix_ops
+    utils
+    GTest::gtest_main
+)
+set_target_properties(mlp_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
 # Register tests with CTest
 include(GoogleTest)
 gtest_discover_tests(matrix_tests)
+gtest_discover_tests(mlp_tests)

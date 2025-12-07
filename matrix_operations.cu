@@ -10,7 +10,7 @@
  * @param pitch_B Row pitch in bytes for matrix B
  * @param pitch_Result Row pitch in bytes for result matrix
  */
-__global__ void matrix_add(float *A, float *B, float *Result, int width, int height, ssize_t pitch_A, ssize_t pitch_B, ssize_t pitch_Result){
+__global__ void matrix_add(float *A, float *B, float *Result, int width, int height, size_t pitch_A, size_t pitch_B, size_t pitch_Result){
     // Indices in the matrices
     int x = blockDim.x * blockIdx.x + threadIdx.x;
     int y = blockDim.y * blockIdx.y + threadIdx.y;
@@ -39,7 +39,7 @@ __global__ void matrix_add(float *A, float *B, float *Result, int width, int hei
  * @param pitch_B Row pitch in bytes for matrix B
  * @param pitch_Result Row pitch in bytes for result matrix
  */
-__global__ void matrix_mul(float *A, float *B, float *Result, int m, int n, int p, ssize_t pitch_A, ssize_t pitch_B, ssize_t pitch_Result){
+__global__ void matrix_mul(float *A, float *B, float *Result, int m, int n, int p, size_t pitch_A, size_t pitch_B, size_t pitch_Result){
      int x = blockDim.x * blockIdx.x + threadIdx.x;
      int y = blockDim.y * blockIdx.y + threadIdx.y;
  
@@ -70,7 +70,7 @@ __global__ void matrix_mul(float *A, float *B, float *Result, int m, int n, int 
  * @param pitch_W Row pitch in bytes for matrix W
  * @param pitch_Result Row pitch in bytes for result matrix
  */
-__global__ void matrix_feedforward(float *X, float *W,float *B, float *Result, int H_in, int H_out, int batch_size, ssize_t pitch_X, ssize_t pitch_W, ssize_t pitch_Result){
+__global__ void matrix_feedforward(float *X, float *W,float *B, float *Result, int H_in, int H_out, int batch_size, size_t pitch_X, size_t pitch_W, size_t pitch_Result){
     int x = blockDim.x * blockIdx.x + threadIdx.x;
     int y = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -98,7 +98,7 @@ __global__ void matrix_feedforward(float *X, float *W,float *B, float *Result, i
  * @param pitch_X Row pitch in bytes for matrix X
  * @param pitch_Result Row pitch in bytes for result matrix
  */
-__global__ void matrix_RELU(float *X, float *Result, int H_in, int batch_size, ssize_t pitch_X, ssize_t pitch_Result){
+__global__ void matrix_RELU(float *X, float *Result, int H_in, int batch_size, size_t pitch_X, size_t pitch_Result){
     int x = blockDim.x * blockIdx.x + threadIdx.x;
     int y = blockDim.y * blockIdx.y + threadIdx.y;
 
