@@ -26,3 +26,90 @@ __global__ void matrix_add(float *A, float *B, float *Result, int width, int hei
     
     row_Result[x] = row_A[x] + row_B[x];
 }
+
+/**
+ * @brief CUDA kernel that performs matrix multiplication on the GPU
+ * @param A First input matrix : m * n
+ * @param B Second input matrix : n * p
+ * @param Result Output matrix : m * p
+ * @param m 
+ * @param n
+ * @param p
+ * @param pitch_A Row pitch in bytes for matrix A
+ * @param pitch_B Row pitch in bytes for matrix B
+ * @param pitch_Result Row pitch in bytes for result matrix
+ */
+__global__ void matrix_mul(float *A, float *B, float *Result, int m, int n, int p, ssize_t pitch_A, ssize_t pitch_B, ssize_t pitch_Result){
+     int x = blockDim.x * blockIdx.x + threadIdx.x;
+     int y = blockDim.y * blockIdx.y + threadIdx.y;
+ 
+     if (x >= p || y >= m)
+         return;
+    
+    float* row_Result = (float*)((char*)Result + y * pitch_Result);
+    float *row_A = (float*)((char*)A + y * pitch_A);
+
+    row_Result[x] = 0;
+    for (size_t i = 0; i < n; i++)
+    {
+        float* row_B = (float*)((char*)B + i * pitch_B);
+        row_Result[x] += row_A[i] * row_B[x];
+    }
+}
+
+/**
+ * @brief CUDA kernel that performs feedforward layer on the GPU
+ * @param X input matrix : batch_size * H_in
+ * @param W weights matrix: H_in, H_out
+ * @param B biaises matrix: 1 *  H_out
+ * @param Result Output matrix : batch_size * H_out
+ * @param H_in
+ * @param H_out
+ * @param batch_size
+ * @param pitch_X Row pitch in bytes for matrix X
+ * @param pitch_W Row pitch in bytes for matrix W
+ * @param pitch_Result Row pitch in bytes for result matrix
+ */
+__global__ void matrix_feedforward(float *X, float *W,float *B, float *Result, int H_in, int H_out, int batch_size, ssize_t pitch_X, ssize_t pitch_W, ssize_t pitch_Result){
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+    if (x >= H_out || y >= batch_size)
+        return;
+   
+   float* row_Result = (float*)((char*)Result + y * pitch_Result);
+   float *row_X = (float*)((char*)X + y * pitch_X);
+
+   row_Result[x] = B[x];
+   for (size_t i = 0; i < H_in; i++)
+   {
+       float* row_W = (float*)((char*)W + i * pitch_W);
+       row_Result[x] += row_X[i] * row_W[x];
+   }
+}
+
+
+/**
+ * @brief CUDA kernel that performs RELU layer on the GPU
+ * @param X input matrix : batch_size * H_in
+ * @param Result Output matrix : batch_size * H_in
+ * @param H_in
+ * @param batch_size
+ * @param pitch_X Row pitch in bytes for matrix X
+ * @param pitch_Result Row pitch in bytes for result matrix
+ */
+__global__ void matrix_RELU(float *X, float *Result, int H_in, int batch_size, ssize_t pitch_X, ssize_t pitch_Result){
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+    if (x >= H_in || y >= batch_size)
+        return;
+   
+    float* row_Result = (float*)((char*)Result + y * pitch_Result);
+    float *row_X = (float*)((char*)X + y * pitch_X);
+
+    row_Result[x] = 0;
+    if (row_X[x] > 0.){
+        row_Result[x] = row_X[x];
+    }
+}
