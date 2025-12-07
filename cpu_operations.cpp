@@ -43,7 +43,7 @@ void print_matrix(const float* matrix, int rows, int cols, const char* name) {
  * @param epsilon Maximum allowed difference between elements
  * @return true if matrices are equal within epsilon, false otherwise
  */
-bool cpu_matrix_equals(float *Result, float *Expected, ssize_t rows, ssize_t cols, bool printIfFalse, float epsilon){
+bool cpu_matrix_equals(float *Result, float *Expected, size_t rows, size_t cols, bool printIfFalse, float epsilon){
     bool res = true;
     for (int i = 0; i < rows * cols; i++) {
         if (std::fabs(Result[i] - Expected[i]) > epsilon) {
@@ -69,7 +69,7 @@ bool cpu_matrix_equals(float *Result, float *Expected, ssize_t rows, ssize_t col
  * @param w Matrix width (number of columns)
  * @param h Matrix height (number of rows)
  */
-void cpu_matrix_add(float *A, float *B, float *Result, ssize_t w, ssize_t h){
+void cpu_matrix_add(float *A, float *B, float *Result, size_t w, size_t h){
     for (size_t i = 0; i < w * h; i++)
     {
         Result[i] = A[i] + B[i];
@@ -89,7 +89,7 @@ void cpu_matrix_add(float *A, float *B, float *Result, ssize_t w, ssize_t h){
  * @note Matrices stored in row-major order
  *       Result[i][j] = sum(A[i][k] * B[k][j]) for k = 0 to N-1
  */
-void cpu_matrix_mul(float *A, float *B, float *Result, ssize_t M, ssize_t N, ssize_t P){
+void cpu_matrix_mul(float *A, float *B, float *Result, size_t M, size_t N, size_t P){
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < P; j++) {
             float sum = 0.0f;
@@ -108,8 +108,8 @@ void cpu_matrix_mul(float *A, float *B, float *Result, ssize_t M, ssize_t N, ssi
  * @param w Width (number of columns)
  * @param h Height (number of rows)
  */
-void cpu_matrix_relu(float *X, float *Result, ssize_t w, ssize_t h) {
-    for (ssize_t i = 0; i < h * w; i++) {
+void cpu_matrix_relu(float *X, float *Result, size_t w, size_t h) {
+    for (size_t i = 0; i < h * w; i++) {
         Result[i] = X[i] > 0.0f ? X[i] : 0.0f;
     }
 }

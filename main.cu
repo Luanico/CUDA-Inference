@@ -1,34 +1,20 @@
 #include "matrix_operations.h"
 #include "cpu_operations.h"
+#include "error_utils.h"
+
 #include <spdlog/spdlog.h>
 #include <cassert>
 
 const int SIZE_X = 16;
 const int SIZE_Y = 16;
 
-/**
- * @brief Aborts execution with a CUDA error message
- * @param msg Error message to display
- * @param fname Function name where error occurred
- * @param line Line number where error occurred
- */
-[[gnu::noinline]]
-void _abortError(const char* msg, const char* fname, int line)
-{
-  cudaError_t err = cudaGetLastError();
-  spdlog::error("{} ({}, line: {})", msg, fname, line);
-  spdlog::error("Error {}: {}", cudaGetErrorName(err), cudaGetErrorString(err));
-  std::exit(1);
-}
-
-#define abortError(msg) _abortError(msg, __FUNCTION__, __LINE__)
 
 /**
  * @brief Main function that tests GPU matrix addition against CPU implementation
  * @return Exit code (0 on success, 1 on error)
  */
 int main(){
-    ssize_t total_size = SIZE_X * SIZE_Y * sizeof(float);
+    size_t total_size = SIZE_X * SIZE_Y * sizeof(float);
     
 
     // Host allocation
