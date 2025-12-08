@@ -1,26 +1,35 @@
 #include <fstream>
 #include <cassert>
+#include <iostream> 
+#include <vector>   
+#include <string>    
+#include <cstring>
 
 #include "onnx.pb.h"
 
-float* getWeights(const ::google::protobuf::RepeatedPtrField< ::onnx::TensorProto >& tensors)
+std::vector<std::vector<float>> getWeights(const google::protobuf::RepeatedPtrField<onnx::TensorProto>& tensors)
 {
-    std::list<float> weights = {};
-    for (auto t : tensors)
+    std::vector<std::vector<float>> weights(tensors.size());
+
+
+    for (size_t i = 0; i < tensors.size(); i++)
     {
-        weights.push_back(t);
+        weights.at(i).resize(tensors.at(i).raw_data().size() / sizeof(float));
+        memcpy(weights.at(i).data(), tensors.at(i).raw_data().data(), tensors.at(i).raw_data().size());
     }
+
+    return weights;
 }
 
-int main(int argc, char* argv)
+int main(int argc, char* argv[])
 {
     std::ifstream input(argv[1], std::ios::in | std::ios::binary);
     onnx::ModelProto model;
     model.ParseFromIstream(&input);
     ::onnx::GraphProto graph = model.graph();
 
-    std::list<float> weights = getWeights(graph.initializer());
-    std::cout << weights;
-    std::cout << std::endl;
+    std::vector<std::vector<float>> weights = getWeights(graph.initializer());
+
+    return 0;
 }
 

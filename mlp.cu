@@ -113,27 +113,12 @@ void MLP::forward(float *X, float *Result, size_t X_input_size, size_t X_batch_s
         abortError("Computation Error"); 
     
     
-    //allocate the unactivated output layer
-    float *O;
-    size_t pitch_O;
-    rc = cudaMallocPitch(&O, &pitch_O, output_dim, batch_size * sizeof(float));
-    if(rc)
-        abortError("Fail Buffer Allocation");
-
     //linear2
-    matrix_feedforward<<<dimGrid, dimBlock>>>(Z, W2, B2, O, hidden_dim, output_dim, batch_size, pitch_Z, pitch_W2, pitch_O);
+    matrix_feedforward<<<dimGrid, dimBlock>>>(Z, W2, B2, Result, hidden_dim, output_dim, batch_size, pitch_Z, pitch_W2, pitch_Result);
     
     if (cudaPeekAtLastError())
         abortError("Computation Error"); 
-
-    //ReLU1
-    matrix_RELU<<<dimGrid, dimBlock>>>(O, Result, output_dim, batch_size, pitch_O, pitch_Result);
-
-    if (cudaPeekAtLastError())
-        abortError("Computation Error"); 
-    
     
     cudaFree(H);
     cudaFree(Z);
-    cudaFree(O);
 }
