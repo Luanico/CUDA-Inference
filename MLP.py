@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import onnx
+import time
 
 class MLP(torch.nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -15,14 +16,44 @@ class MLP(torch.nn.Module):
         return x
 
 
-INPUT_SIZE = 10
-HIDDEN_SIZE = 50
-OUTPUT_SIZE = 1
+INPUT_SIZE = 2048
+HIDDEN_SIZE = 4096
+OUTPUT_SIZE = 10
+batch_size=1024
+
+
+
+def saveRandomModel(filename):
+    modelPytorch = MLP(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
+    dummy_input = torch.randn(1, INPUT_SIZE)
+    torch.onnx.export(modelPytorch, dummy_input, filename, input_names=['input'], output_names=['output'])
 
 def loadONNXW(filename):
     model = onnx.load(filename)
 
+    modelPytorch = MLP(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
+    modelPytorch.linear.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[0]))
+    modelPytorch.linear.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[1]))
 
-def main():
+    modelPytorch.output.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[2]))
+    modelPytorch.output.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[3]))
+
+    return modelPytorch.to("cuda")
 
 
+FILENAME = "mlp_2048_4096_10.onnx"
+
+#saveRandomModel(FILENAME)
+
+model = loadONNXW(FILENAME)
+
+
+def inference(model):
+    a = time.time()
+    input_tensor = torch.randn((batch_size, INPUT_SIZE)).to("cuda")
+    INFERENCE_TIMES = 100
+    [model(input_tensor) for _ in range(INFERENCE_TIMES)]
+    end = time.time() - a
+    return end / INFERENCE_TIMES
+
+print(f"Average pytorch inference time : {inference(model)}")
