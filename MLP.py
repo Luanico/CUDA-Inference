@@ -27,6 +27,11 @@ def saveRandomModel(filename):
     modelPytorch = MLP(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
     dummy_input = torch.randn(1, INPUT_SIZE)
     torch.onnx.export(modelPytorch, dummy_input, filename, input_names=['input'], output_names=['output'])
+    
+    model = onnx.load(filename)
+    from onnx.external_data_helper import convert_model_to_external_data, load_external_data_for_model
+    load_external_data_for_model(model, '.')
+    onnx.save(model, filename, save_as_external_data=False)
 
 def loadONNXW(filename):
     model = onnx.load(filename)
