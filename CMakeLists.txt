@@ -78,6 +78,7 @@ if(DEFINED ENV{CONDA_PREFIX})
 endif()
 
 find_package(Protobuf REQUIRED)
+find_package(absl REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 
 add_executable(inference_cuda inference_cuda.cu load_onnx.cpp onnx.pb.cc)
@@ -85,6 +86,10 @@ target_link_libraries(inference_cuda PRIVATE
     matrix_ops
     utils
     ${Protobuf_LIBRARIES}
+    absl::log_internal_check_op
+    absl::log_internal_message
+    absl::base
+    absl::strings
 )
 
 # Register tests with CTest
