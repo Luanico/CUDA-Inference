@@ -22,37 +22,13 @@ std::vector<float> transpose(const std::vector<float>& mat, int rows, int cols) 
 
 int main(int argc, char* argv[])
 {
-    std::cout << "Loading ONNX file: " << FILENAME << std::endl;
-    
     //std::vector<std::vector<float>> weights = getWeightsFromFile(argv[1]);
     std::vector<std::vector<float>> weights = getWeightsFromFile(FILENAME);
-
-    std::cout << "Loaded " << weights.size() << " tensors from ONNX file" << std::endl;
-    for (size_t i = 0; i < weights.size(); i++) {
-        std::cout << "  Tensor " << i << ": " << weights[i].size() << " elements" << std::endl;
-    }
-
-    if (weights.size() < 4) {
-        std::cerr << "Error: Expected at least 4 tensors (W1, B1, W2, B2), got " << weights.size() << std::endl;
-        return 1;
-    }
-
-    // Expected sizes
-    size_t expected_W1 = (size_t)HIDDEN_SIZE * INPUT_DIM;   // 4096 * 2048
-    size_t expected_B1 = (size_t)HIDDEN_SIZE;               // 4096
-    size_t expected_W2 = (size_t)OUTPUT_SIZE * HIDDEN_SIZE; // 10 * 4096  
-    size_t expected_B2 = (size_t)OUTPUT_SIZE;               // 10
-
-    std::cout << "Expected sizes: W1=" << expected_W1 << ", B1=" << expected_B1 
-              << ", W2=" << expected_W2 << ", B2=" << expected_B2 << std::endl;
 
     std::vector<float> W1_transposed = transpose(weights[0], HIDDEN_SIZE, INPUT_DIM);
     std::vector<float> W2_transposed = transpose(weights[2], OUTPUT_SIZE, HIDDEN_SIZE);
 
-    std::cout << "Creating MLP..." << std::endl;
     MLP mlp(INPUT_DIM, HIDDEN_SIZE, OUTPUT_SIZE, batch_size);
-    
-    std::cout << "Loading weights into MLP..." << std::endl;
     mlp.load_weights(W1_transposed.data(), W2_transposed.data(), weights[1].data(), weights[3].data(), INPUT_DIM, HIDDEN_SIZE, OUTPUT_SIZE, batch_size);
 
     float *X = new float[batch_size * INPUT_DIM];
