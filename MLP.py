@@ -58,4 +58,4 @@ def inference(model):
     end = time.time() * 1000 - a
     return end / INFERENCE_TIMES
 
-print(f"Average pytorch inference time : {inference(model)}")
+print(f"Average pytorch inference time : {inference(model)} ms")
