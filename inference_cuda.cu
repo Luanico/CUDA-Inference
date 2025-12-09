@@ -10,13 +10,26 @@ int OUTPUT_SIZE = 10;
 int batch_size = 1024;
 char *FILENAME = "mlp_2048_4096_10.onnx";
 
+std::vector<float> transpose(const std::vector<float>& mat, int rows, int cols) {
+    std::vector<float> result(rows * cols);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            result[j * rows + i] = mat[i * cols + j];
+        }
+    }
+    return result;
+}
+
 int main(int argc, char* argv[])
 {
     //std::vector<std::vector<float>> weights = getWeightsFromFile(argv[1]);
     std::vector<std::vector<float>> weights = getWeightsFromFile(FILENAME);
 
+    std::vector<float> W1_transposed = transpose(weights[0], HIDDEN_SIZE, INPUT_DIM);
+    std::vector<float> W2_transposed = transpose(weights[2], OUTPUT_SIZE, HIDDEN_SIZE);
+
     MLP mlp(INPUT_DIM, HIDDEN_SIZE, OUTPUT_SIZE, batch_size);
-    mlp.load_weights(weights[0].data(), weights[2].data(), weights[1].data(), weights[3].data(), INPUT_DIM, HIDDEN_SIZE, OUTPUT_SIZE, batch_size);
+    mlp.load_weights(W1_transposed.data(), W2_transposed.data(), weights[1].data(), weights[3].data(), INPUT_DIM, HIDDEN_SIZE, OUTPUT_SIZE, batch_size);
 
     float *X = new float[batch_size * INPUT_DIM];
     for (size_t i = 0; i < batch_size * INPUT_DIM; i++)
