@@ -69,6 +69,17 @@ target_link_libraries(mlp_tests PRIVATE
 )
 set_target_properties(mlp_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
+
+find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+
+add_executable(inference_cuda inference_cuda.cu load_onnx.cpp onnx.pb.cc)
+target_link_libraries(inference_cuda PRIVATE 
+    matrix_ops
+    utils
+    ${Protobuf_LIBRARIES}
+)
+
 # Register tests with CTest
 include(GoogleTest)
 gtest_discover_tests(matrix_tests)

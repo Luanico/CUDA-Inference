@@ -38,22 +38,24 @@ def loadONNXW(filename):
     modelPytorch.output.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[2]))
     modelPytorch.output.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[3]))
 
-    return modelPytorch.to("cuda")
+    return modelPytorch
 
 
 FILENAME = "mlp_2048_4096_10.onnx"
 
 #saveRandomModel(FILENAME)
 
-model = loadONNXW(FILENAME)
-
+model = loadONNXW(FILENAME).to("cuda")
+model.eval()
 
 def inference(model):
-    a = time.time()
+    a = time.time() * 1000
     input_tensor = torch.randn((batch_size, INPUT_SIZE)).to("cuda")
     INFERENCE_TIMES = 100
-    [model(input_tensor) for _ in range(INFERENCE_TIMES)]
-    end = time.time() - a
+    with torch.no_grad():
+        [model(input_tensor) for _ in range(INFERENCE_TIMES)]
+    torch.cuda.synchronize()
+    end = time.time() * 1000 - a
     return end / INFERENCE_TIMES
 
 print(f"Average pytorch inference time : {inference(model)}")
