@@ -70,6 +70,13 @@ target_link_libraries(mlp_tests PRIVATE
 set_target_properties(mlp_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 
+if(DEFINED ENV{CONDA_PREFIX})
+    message(STATUS "Adding Conda prefix to search paths: $ENV{CONDA_PREFIX}")
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX}")
+    include_directories("$ENV{CONDA_PREFIX}/include")
+    link_directories("$ENV{CONDA_PREFIX}/lib")
+endif()
+
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 
