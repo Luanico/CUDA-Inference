@@ -21,15 +21,15 @@ std::vector<std::vector<float>> getWeights(const google::protobuf::RepeatedPtrFi
     return weights;
 }
 
-int main(int argc, char* argv[])
+std::vector<std::vector<float>> getWeightsFromFile(char* filename)
 {
-    std::ifstream input(argv[1], std::ios::in | std::ios::binary);
+    std::ifstream input(filename, std::ios::in | std::ios::binary);
     onnx::ModelProto model;
     model.ParseFromIstream(&input);
     ::onnx::GraphProto graph = model.graph();
 
     std::vector<std::vector<float>> weights = getWeights(graph.initializer());
 
-    return 0;
+    return weights;
 }
 
