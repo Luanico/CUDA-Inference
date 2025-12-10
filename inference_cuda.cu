@@ -3,12 +3,9 @@
 #include "mlp.h"
 #include <stdio.h>
 #include <chrono>
-
-int INPUT_DIM = 2048;
-int HIDDEN_SIZE = 4096;
-int OUTPUT_SIZE = 10;
-int batch_size = 1024;
-char *FILENAME = "mlp_2048_4096_10.onnx";
+#include <map>
+#include <tuple>
+#include <string>
 
 std::vector<float> transpose(const std::vector<float>& mat, int rows, int cols) {
     std::vector<float> result(rows * cols);
@@ -20,10 +17,15 @@ std::vector<float> transpose(const std::vector<float>& mat, int rows, int cols) 
     return result;
 }
 
-int main(int argc, char* argv[])
-{
-    //std::vector<std::vector<float>> weights = getWeightsFromFile(argv[1]);
-    std::vector<std::vector<float>> weights = getWeightsFromFile(FILENAME);
+float benchmark_architecture(int INPUT_DIM, int HIDDEN_SIZE, int OUTPUT_SIZE, int batch_size, const char* FILENAME) {
+    std::cout << "\n=== Testing architecture: (" << INPUT_DIM << ", " << HIDDEN_SIZE << ", " << OUTPUT_SIZE << ", " << batch_size << ") ===" << std::endl;
+    
+    std::vector<std::vector<float>> weights = getWeightsFromFile((char*)FILENAME);
+
+    if (weights.size() < 4) {
+        std::cerr << "Error: Expected at least 4 tensors, got " << weights.size() << std::endl;
+        return -1.0f;
+    }
 
     std::vector<float> W1_transposed = transpose(weights[0], HIDDEN_SIZE, INPUT_DIM);
     std::vector<float> W2_transposed = transpose(weights[2], OUTPUT_SIZE, HIDDEN_SIZE);
@@ -36,7 +38,6 @@ int main(int argc, char* argv[])
     {
         X[i] = static_cast<float>(rand()) / RAND_MAX;
     }
-
 
     float *dest;
     size_t pitch_size;
@@ -72,4 +73,35 @@ int main(int argc, char* argv[])
     cudaFree(dev_result);
     delete[] X;
 
+    return avg_time;
+}
+
+int main(int argc, char* argv[])
+{
+    std::map<std::tuple<int, int, int, int>, const char*> architectures = {
+        {{512, 1024, 10, 256}, "mlp_small.onnx"},
+        {{1024, 2048, 10, 512}, "mlp_medium.onnx"},
+        {{2048, 4096, 10, 1024}, "mlp_large.onnx"},
+        {{4096, 8192, 10, 2048}, "mlp_huge.onnx"}
+    };
+
+    std::cout << "========================================" << std::endl;
+    std::cout << "CUDA MLP Inference Benchmark" << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    for (const auto& [config, filename] : architectures) {
+        auto [input_dim, hidden_size, output_size, batch_size] = config;
+        float avg_time = benchmark_architecture(input_dim, hidden_size, output_size, batch_size, filename);
+        
+        if (avg_time > 0) {
+            std::cout << "Architecture (" << input_dim << ", " << hidden_size << ", " 
+                      << output_size << ", " << batch_size << "): " << avg_time << " ms" << std::endl;
+        }
+    }
+
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "Benchmark completed" << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    return 0;
 }

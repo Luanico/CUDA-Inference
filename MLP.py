@@ -16,14 +16,9 @@ class MLP(torch.nn.Module):
         return x
 
 
-INPUT_SIZE = 2048
-HIDDEN_SIZE = 4096
-OUTPUT_SIZE = 10
-batch_size=1024
 
 
-
-def saveRandomModel(filename):
+def saveRandomModel(filename, INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE):
     modelPytorch = MLP(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
     dummy_input = torch.randn(1, INPUT_SIZE)
     torch.onnx.export(modelPytorch, dummy_input, filename, input_names=['input'], output_names=['output'])
@@ -33,7 +28,7 @@ def saveRandomModel(filename):
     load_external_data_for_model(model, '.')
     onnx.save(model, filename, save_as_external_data=False)
 
-def loadONNXW(filename):
+def loadONNXW(filename, INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE):
     model = onnx.load(filename)
 
     modelPytorch = MLP(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
@@ -46,14 +41,9 @@ def loadONNXW(filename):
     return modelPytorch
 
 
-FILENAME = "mlp_2048_4096_10.onnx"
 
-saveRandomModel(FILENAME)
 
-model = loadONNXW(FILENAME).to("cuda")
-model.eval()
-
-def inference(model):
+def inference(model, INPUT_SIZE):
     a = time.time() * 1000
     input_tensor = torch.randn((batch_size, INPUT_SIZE)).to("cuda")
     INFERENCE_TIMES = 100
@@ -63,4 +53,18 @@ def inference(model):
     end = time.time() * 1000 - a
     return end / INFERENCE_TIMES
 
-print(f"Average pytorch inference time : {inference(model)} ms")
+
+architectures = {
+    (512, 1024, 10, 256) : "mlp_small.onnx",
+    (1024, 2048, 10, 512) : "mlp_medium.onnx",
+    (2048, 4096, 10, 1024) : "mlp_large.onnx",
+    (4096, 8192, 10, 2048) : "mlp_huge.onnx",
+}
+
+for key, val in architectures.items():
+    saveRandomModel(val, key[0], key[1], key[2])
+    model = loadONNXW(key, key[0], key[1], key[2]).to("cuda")
+    model.eval()
+    average_inf_time = inference(model, key[0])
+
+    print(f"Average pytorch inference time for model with architecure (input, hidden, output, batch) : {key} = {inference(model)} ms")
