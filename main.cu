@@ -1,98 +1,85 @@
 #include "matrix_operations.h"
 #include "cpu_operations.h"
 #include "error_utils.h"
+#include "convolutions.h"
 
 #include <spdlog/spdlog.h>
 #include <cassert>
 
-const int SIZE_X = 16;
-const int SIZE_Y = 16;
 
-
-/**
- * @brief Main function that tests GPU matrix addition against CPU implementation
- * @return Exit code (0 on success, 1 on error)
- */
 int main(){
-    size_t total_size = SIZE_X * SIZE_Y * sizeof(float);
-    
 
+    int im_height = 1920;
+    int im_width = 1080;
+    int kernel_width = 3;  // Odd size kernel
+    
     // Host allocation
-    float *A = (float*) malloc(total_size);
-    float *B = (float*) malloc(total_size);
-    float *Result = (float*) malloc(total_size);
-    float *Expected = (float*) malloc(total_size);
+    float *input = new float[im_height * im_width];
+    float *kernel = new float[kernel_width * kernel_width];
+    float *Result = new float[im_height * im_width];
 
-    // Init A and B
-    for (size_t i = 0; i < SIZE_X * SIZE_Y; i++)
-    {
-        A[i] = rand() % 10;
-        B[i] = rand() % 10;
+    // Initialize input with random values
+    for (int i = 0; i < im_height * im_width; i++) {
+        input[i] = static_cast<float>(rand() % 10) / 10.0f;
     }
-
-    // device value definitions
-    int bsize = 32;
-    int w     = std::ceil((float)SIZE_X / bsize);
-    int h     = std::ceil((float)SIZE_Y / bsize);
-
-    spdlog::debug("running kernel of size ({},{})", w, h);
-
-    dim3 dimBlock(bsize, bsize);
-    dim3 dimGrid(w, h);
-
+    
+    // Initialize kernel (e.g., simple edge detection or blur)
+    // Example: 3x3 box blur kernel
+    for (int i = 0; i < kernel_width * kernel_width; i++) {
+        kernel[i] = 1.0f / (kernel_width * kernel_width);
+    }
+    
     // Device allocation
-    float *dev_A, *dev_B, *dev_Result;
-    size_t pitch_A, pitch_B, pitch_Result;
-    cudaError_t rc = cudaMallocPitch(&dev_A, &pitch_A, SIZE_X * sizeof(float), SIZE_Y);
+    float *dev_input, *dev_kernel, *dev_Result;
+    size_t pitch_input, pitch_kernel, pitch_Result;
+    
+    cudaError_t rc = cudaMallocPitch(&dev_input, &pitch_input, im_width * sizeof(float), im_height), cudaSuccess;
     if(rc)
         abortError("Fail Buffer Allocation");
-    rc = cudaMallocPitch(&dev_B, &pitch_B, SIZE_X * sizeof(float), SIZE_Y);
+    rc = cudaMallocPitch(&dev_kernel, &pitch_kernel, kernel_width * sizeof(float), kernel_width), cudaSuccess;
     if(rc)
         abortError("Fail Buffer Allocation");
-    rc = cudaMallocPitch(&dev_Result, &pitch_Result, SIZE_X * sizeof(float), SIZE_Y);
+    rc = cudaMallocPitch(&dev_Result, &pitch_Result, im_width * sizeof(float), im_height), cudaSuccess;
     if(rc)
         abortError("Fail Buffer Allocation");
-
-   
-    // Copy values from host matrices to device matrices
-    rc = cudaMemcpy2D(dev_A, pitch_A, A, SIZE_X * sizeof(float), SIZE_X * sizeof(float), SIZE_Y, cudaMemcpyHostToDevice);
+    
+    // Copy to device
+    rc = cudaMemcpy2D(dev_input, pitch_input, input, im_width * sizeof(float),
+                           im_width * sizeof(float), im_height, cudaMemcpyHostToDevice), cudaSuccess;
     if(rc)
         abortError("Fail Buffer Copy");
-    rc = cudaMemcpy2D(dev_B, pitch_B, B, SIZE_X * sizeof(float), SIZE_X * sizeof(float), SIZE_Y, cudaMemcpyHostToDevice);
+    rc = cudaMemcpy2D(dev_kernel, pitch_kernel, kernel, kernel_width * sizeof(float),
+                           kernel_width * sizeof(float), kernel_width, cudaMemcpyHostToDevice), cudaSuccess;
     if(rc)
         abortError("Fail Buffer Copy");
     
+    // Launch kernel
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((im_width + dimBlock.x - 1) / dimBlock.x,
+                 (im_height + dimBlock.y - 1) / dimBlock.y);
 
-    // call the kernel that does the addition
-    matrix_add<<<dimGrid, dimBlock>>>(dev_A, dev_B, dev_Result, SIZE_X, SIZE_Y, pitch_A, pitch_B, pitch_Result);
-    
-    // Check for an error (it also performs a cudaDeviceSynchronize, to wait for GPU operations to finish)
-    if (cudaPeekAtLastError())
-        abortError("Computation Error"); 
-
-    // Copy result from device to host
-    rc = cudaMemcpy2D(Result, SIZE_X * sizeof(float), dev_Result, pitch_Result, SIZE_X * sizeof(float), SIZE_Y, cudaMemcpyDeviceToHost);
-    if(rc)
-        abortError("Fail Buffer Copy");
-
-    // Check if result is valid
-    cpu_matrix_add(A, B, Expected, SIZE_X, SIZE_Y);
-    if (cpu_matrix_equals(Result, Expected, SIZE_X, SIZE_Y)){
-        spdlog::info("Matrices addition success!");
+    // Run multiple iterations so kernel time dominates in nsys output
+    for (int i = 0; i < 1; i++) {
+        call_GPU_naive_convolution(dev_input, dev_Result, dev_kernel, 
+                                                 im_width, im_height, kernel_width); //TODO: this behavior changed, cuda parts like allocation in it
     }
 
-    // Free everything nono memory leaks
-    rc = cudaFree(dev_A);
+    rc = cudaDeviceSynchronize();
+    if (rc)
+        abortError("Computation Error"); 
+    
+    // Copy result back
+    rc = cudaMemcpy2D(Result, im_width * sizeof(float), dev_Result, pitch_Result,
+                           im_width * sizeof(float), im_height, cudaMemcpyDeviceToHost), cudaSuccess;
     if(rc)
-        abortError("Fail Buffer Free");
-    rc = cudaFree(dev_B);
-    if(rc)
-        abortError("Fail Buffer Free");
-    rc = cudaFree(dev_Result);
-    if(rc)
-        abortError("Fail Buffer Free");
-
-    free(A);
-    free(B);
-    free(Result);
+        abortError("Fail Buffer Copy");
+    
+    
+    // Cleanup
+    cudaFree(dev_input);
+    cudaFree(dev_kernel);
+    cudaFree(dev_Result);
+    delete[] input;
+    delete[] kernel;
+    delete[] Result;
 }

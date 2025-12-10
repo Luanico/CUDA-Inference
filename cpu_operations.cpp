@@ -13,10 +13,10 @@ void print_matrix(const float* matrix, int rows, int cols, const char* name) {
     }
     
     // Find maximum width needed for formatting
-    int max_width = 1; // minimum width
+    int max_width = 2; // minimum width
     for (int i = 0; i < rows * cols; i++) {
         char buffer[32];
-        snprintf(buffer, sizeof(buffer), "%.1f", matrix[i]);
+        snprintf(buffer, sizeof(buffer), "%.2f", matrix[i]);
         int len = strlen(buffer);
         if (len > max_width) max_width = len;
     }
@@ -24,7 +24,7 @@ void print_matrix(const float* matrix, int rows, int cols, const char* name) {
     for (int i = 0; i < rows; i++) {
         printf("  [");
         for (int j = 0; j < cols; j++) {
-            printf("%*.1f", max_width, matrix[i * cols + j]);
+            printf("%*.2f", max_width, matrix[i * cols + j]);
             if (j < cols - 1) printf(" ");
         }
         printf("]\n");
@@ -111,5 +111,106 @@ void cpu_matrix_mul(float *A, float *B, float *Result, size_t M, size_t N, size_
 void cpu_matrix_relu(float *X, float *Result, size_t w, size_t h) {
     for (size_t i = 0; i < h * w; i++) {
         Result[i] = X[i] > 0.0f ? X[i] : 0.0f;
+    }
+}
+
+
+/**
+ * @brief CPU implementation of 2D convolution
+ * @param input Input matrix (height × width)
+ * @param kernel Convolution kernel (kernel_height × kernel_width)
+ * @param output Output matrix (output_height × output_width)
+ * @param input_height Height of input
+ * @param input_width Width of input
+ * @param kernel_height Height of kernel
+ * @param kernel_width Width of kernel
+ * @param stride Stride for convolution (default: 1)
+ * @param padding Padding to add around input (default: 0)
+ */
+void cpu_conv2d(float *input, float *kernel, float *output, 
+                int input_height, int input_width,
+                int kernel_height, int kernel_width,
+                int stride, int padding){
+    // Calculate output dimensions
+    int output_height = (input_height + 2 * padding - kernel_height) / stride + 1;
+    int output_width = (input_width + 2 * padding - kernel_width) / stride + 1;
+
+    // For each output position
+    for (int out_y = 0; out_y < output_height; out_y++) {
+        for (int out_x = 0; out_x < output_width; out_x++) {
+            float sum = 0.0f;
+
+            // Apply kernel
+            for (int ky = 0; ky < kernel_height; ky++) {
+                for (int kx = 0; kx < kernel_width; kx++) {
+                    // Calculate input position
+                    int in_y = out_y * stride + ky - padding;
+                    int in_x = out_x * stride + kx - padding;
+                    
+                    // Check if we're within bounds (handle padding)
+                    if (in_y >= 0 && in_y < input_height && 
+                        in_x >= 0 && in_x < input_width) {
+                        sum += input[in_y * input_width + in_x] * 
+                            kernel[ky * kernel_width + kx];
+                    }
+                    // else: treat padding as zeros (implicit)
+                }
+            }
+
+            output[out_y * output_width + out_x] = sum;
+        }
+    }
+}
+
+
+/**
+ * @brief CPU implementation of 2D maxPooling
+ * @param input Input matrix (height × width)
+ * @param output Output matrix (output_height × output_width)
+ * @param input_height Height of input
+ * @param input_width Width of input
+ * @param input_height Height of output
+ * @param input_width Width of output
+ * @param kernel_width Width of kernel
+ * @param stride Stride for convolution (default: 1)
+ * @param padding Padding to add around input (default: 0)
+ */
+void cpu_max_pool2D(float *input, float *output, 
+                    int input_height, int input_width, int output_height, int output_width, int kernel_width,
+                    int stride, int padding){                    
+    // Calculate output dimensions
+    int output_height_ = (input_height + 2 * padding - kernel_width) / stride + 1;
+    int output_width_ = (input_width + 2 * padding - kernel_width) / stride + 1;
+
+    assert(output_height == output_height_);
+    assert(output_width == output_width_);
+
+    // For each output position
+    for (int out_y = 0; out_y < output_height; out_y++) {
+        for (int out_x = 0; out_x < output_width; out_x++) {
+            float max = -INFINITY;
+
+            // Apply kernel
+            for (int ky = 0; ky < kernel_width; ky++) {
+                for (int kx = 0; kx < kernel_width; kx++) {
+                    // Calculate input position
+                    int in_y = out_y * stride + ky - padding;
+                    int in_x = out_x * stride + kx - padding;
+                    
+                    float val_in = 0;
+                    // Check if we're within bounds (handle padding)
+                    if (in_y >= 0 && in_y < input_height && 
+                        in_x >= 0 && in_x < input_width) {
+                        
+                        val_in = input[in_y * input_width + in_x];
+                        if (val_in > max)
+                            max = val_in;
+                    }
+                    // else: treat padding as zeros (implicit)
+                }
+            }
+
+            output[out_y * output_width + out_x] = max;
+        }
     }
 }
