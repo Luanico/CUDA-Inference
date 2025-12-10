@@ -28,6 +28,32 @@ __global__ void matrix_add(float *A, float *B, float *Result, int width, int hei
 }
 
 /**
+ * @brief CUDA kernel that performs single value matrix addition on the GPU
+ * @param A First input matrix (device memory with pitch)
+ * @param val value to add
+ * @param Result Output matrix (A + val, device memory with pitch)
+ * @param width Matrix width (number of columns)
+ * @param height Matrix height (number of rows)
+ * @param pitch_A Row pitch in bytes for matrix A
+ * @param pitch_Result Row pitch in bytes for result matrix
+ */
+__global__ void matrix_add_const(float *A, float val, float *Result, int width, int height, size_t pitch_A, size_t pitch_Result){
+    // Indices in the matrices
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+    // can be called with values higher than matrices dimensions because of gpu stuff so we check
+    if (x >= width || y >= height)
+        return;
+
+    // Cast to char* for byte-level arithmetic, then back to float*
+    float* row_A = (float*)((char*)A + y * pitch_A);
+    float* row_Result = (float*)((char*)Result + y * pitch_Result);
+    
+    row_Result[x] = row_A[x] + val;
+}
+
+/**
  * @brief CUDA kernel that performs matrix multiplication on the GPU
  * @param A First input matrix : m * n
  * @param B Second input matrix : n * p
