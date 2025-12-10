@@ -48,7 +48,7 @@ def loadONNXW(filename):
 
 FILENAME = "mlp_2048_4096_10.onnx"
 
-#saveRandomModel(FILENAME)
+saveRandomModel(FILENAME)
 
 model = loadONNXW(FILENAME).to("cuda")
 model.eval()
