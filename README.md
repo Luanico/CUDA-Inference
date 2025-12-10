@@ -21,6 +21,7 @@ ctest
 
 ### TODO List:
 
+- Test pitch in CNN for linear layers
 - convolutions work only for odd sized kernels.
 - test convolutions with different paddings and strides
 - Test if using inplace operations (for example for relu) is faster
