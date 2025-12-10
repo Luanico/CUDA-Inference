@@ -58,10 +58,9 @@ def inference(model, INPUT_SIZE, batch_size, in_channel):
 
 
 architectures = {
-    (32, 16, 32, 64) : "cnn_small.onnx",
-    (64, 32, 128, 128) : "cnn_medium.onnx",
-    (128, 64, 256, 256) : "cnn_large.onnx",
-    (224, 64, 512, 512) : "cnn_huge.onnx",
+    (32, 3, 16, 64) : "cnn_small.onnx",   
+    (64, 3, 32, 32) : "cnn_medium.onnx",   
+    (128, 3, 64, 16) : "cnn_large.onnx",    
 }
 
 for key, val in architectures.items():
