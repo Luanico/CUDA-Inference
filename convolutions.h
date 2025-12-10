@@ -1,3 +1,6 @@
+#ifndef CONVOLUTIONS_H
+#define CONVOLUTIONS_H
+
 #include "matrix_operations.h"
 #include "error_utils.h"
 
@@ -51,5 +54,19 @@ public:
     void load_weights(float *kernels, float *biases, size_t in_channels_, size_t out_channels_, size_t kernel_size_);
 
     void forward(float *X, float *Result, size_t X_width, size_t X_height, size_t X_channels, size_t Result_width, size_t Result_height,
-                 size_t Result_channels, size_t pitch_X, size_t pitch_Result, size_t batch_size);
+                 size_t Result_channels, size_t batch_size);
 };
+
+class maxPool2D_layer{
+    private:
+        size_t stride, kernel_size;
+    
+    public:
+        maxPool2D_layer(size_t stride_, size_t kernel_size_);
+
+
+        void forward(float *X, float *Result, size_t X_width, size_t X_height, size_t X_channels, size_t Result_width, size_t Result_height,
+                     size_t batch_size);
+    };
+
+#endif

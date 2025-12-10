@@ -68,20 +68,21 @@ __global__ void max_pool2D(float *in, float *out, size_t in_width, size_t in_hei
 
     if (x >= out_width || y >= out_height)
         return;
-    
-    size_t offset = (kernel_width - 1) / 2 ;
 
     float *row_out = (float*)((char*)out + y * pitch_out);
     float max = -INFINITY;
     for (size_t i = 0; i < kernel_width; i++){
-        if (y + i < offset || y + i >= offset + in_height)
+        int input_y = y * stride + i;
+        
+        if (input_y < 0 || input_y >= in_height)
             continue;
-        float* row_in = (float*)((char*)in + (y - offset + i) * pitch_in);
+        float* row_in = (float*)((char*)in + input_y * pitch_in);
         for (size_t j = 0; j < kernel_width; j++){
+            int input_x = x * stride + j;
             float val_in = 0; 
             // for padding
-            if (x + j >= offset && x + j < offset + in_width)
-                val_in = row_in[(x - offset + j)];
+            if (input_x >= 0 && input_x < in_width)
+                val_in = row_in[input_x];
 
             if (val_in > max)
                 max = val_in;
@@ -226,7 +227,7 @@ void convolution_layer::load_weights(float *kernels_, float *biases_, size_t in_
  * Both are allocated as single array.
  * */
 void convolution_layer::forward(float *X, float *Result, size_t X_width, size_t X_height, size_t X_channels, size_t Result_width, size_t Result_height,
-                                size_t Result_channels_, size_t pitch_X, size_t pitch_Result, size_t batch_size){
+                                size_t Result_channels_, size_t batch_size){
     // forward
     //check stuff
 
@@ -276,4 +277,39 @@ void convolution_layer::forward(float *X, float *Result, size_t X_width, size_t 
     
    
    cudaFree(conv_result); 
+}
+
+maxPool2D_layer::maxPool2D_layer(size_t stride_, size_t kernel_size_) 
+    : stride(stride_), kernel_size(kernel_size_){
+
+}
+
+void maxPool2D_layer::forward(float *X, float *Result, size_t X_width, size_t X_height, size_t X_channels, size_t Result_width, size_t Result_height,
+                              size_t batch_size){
+    
+    //forward
+
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((Result_width + dimBlock.x - 1) / dimBlock.x,
+                 (Result_height + dimBlock.y - 1) / dimBlock.y);
+
+    
+    cudaError_t rc = cudaMemset(Result, 0, batch_size * X_channels * Result_height * Result_width * sizeof(float));
+    if (rc)
+        abortError("Fail Buffer Memset");
+
+    for (size_t N = 0; N < batch_size; N++){
+        float *N_Result_start = Result + N * X_channels * Result_height * Result_width;
+        float *N_X_start = X + N * X_channels * X_height * X_width;
+        for (size_t C = 0; C < X_channels; C++){
+            float *C_Result_start = N_Result_start + C * Result_height * Result_width;
+            float *C_X_start = N_X_start + C * X_height * X_width;
+            max_pool2D<<<dimGrid, dimBlock>>>(C_X_start, C_Result_start, X_width, X_height, Result_width, Result_height, kernel_size,
+                 X_width * sizeof(float), Result_width * sizeof(float), stride);
+            rc = cudaDeviceSynchronize();
+            if (rc)
+                abortError("Computation Error");
+        }
+    }
+    
 }

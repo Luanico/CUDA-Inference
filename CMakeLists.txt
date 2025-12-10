@@ -33,6 +33,7 @@ add_library(matrix_ops STATIC
   cpu_operations.cpp
   mlp.cu
   convolutions.cu
+  CNN.cu
 )
 
 target_link_libraries(matrix_ops PUBLIC spdlog::spdlog)
@@ -89,6 +90,15 @@ target_link_libraries(conv_layer_tests PRIVATE
 )
 set_target_properties(conv_layer_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
+# Test 4: cnn
+add_executable(cnn_tests CNN_tests.cu)
+target_link_libraries(cnn_tests PRIVATE 
+    matrix_ops
+    utils
+    GTest::gtest_main
+)
+set_target_properties(cnn_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
 
 
 # Register tests with CTest
@@ -97,3 +107,4 @@ gtest_discover_tests(matrix_tests)
 gtest_discover_tests(mlp_tests)
 gtest_discover_tests(convolutions_tests)
 gtest_discover_tests(conv_layer_tests)
+gtest_discover_tests(cnn_tests)

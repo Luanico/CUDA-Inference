@@ -76,7 +76,6 @@ TEST(ConvolutionLayerTest, BasicForwardPass) {
     // Run forward pass
     conv_layer.forward(dev_X, dev_Result, input_width, input_height, in_channels,
                       output_width, output_height, out_channels,
-                      0, 0,  // pitch parameters (unused with flat allocation)
                       batch_size);
     
     ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);

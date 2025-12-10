@@ -1,3 +1,6 @@
+#include "matrix_operations.h"
+
+#include "error_utils.h"
 
 /**
  * @brief CUDA kernel that performs element-wise matrix addition on the GPU
@@ -134,8 +137,73 @@ __global__ void matrix_RELU(float *X, float *Result, int H_in, int batch_size, s
     float* row_Result = (float*)((char*)Result + y * pitch_Result);
     float *row_X = (float*)((char*)X + y * pitch_X);
 
-    row_Result[x] = 0;
     if (row_X[x] > 0.){
         row_Result[x] = row_X[x];
+    } else{
+        row_Result[x] = 0;
     }
+}
+
+
+linear_layer::linear_layer(size_t input_dim_, size_t output_dim_, bool init_zeros) : input_dim(input_dim_), output_dim(output_dim_) {
+    cudaError_t rc = cudaMallocPitch(&weights, &pitch_weights, output_dim * sizeof(float), input_dim);
+    if(rc)
+        abortError("Fail Buffer Allocation");
+    rc = cudaMalloc(&biases, output_dim * sizeof(float));
+    if(rc)
+        abortError("Fail Buffer Allocation");
+    if (init_zeros){
+        cudaMemset2D(weights, pitch_weights, 0, output_dim * sizeof(float), input_dim);
+        cudaMemset(biases, 0, output_dim);
+    }
+}
+    
+linear_layer::~linear_layer(){
+    cudaFree(weights);
+    cudaFree(biases);
+}
+
+void linear_layer::load_weights(float *weights_, float *biases_, size_t input_dim_, size_t output_dim_){
+     if (input_dim_ != input_dim)
+        abortError("Input dim does not match linear layer parameters!");
+    if (output_dim_ != output_dim)
+        abortError("Output dim does not match lineaer layer parameters!");
+    
+
+    cudaError_t rc = cudaMemcpy2D(weights, pitch_weights, weights_, output_dim * sizeof(float), output_dim * sizeof(float), input_dim, cudaMemcpyHostToDevice);
+    if(rc)
+        abortError("Fail Buffer Copy");
+
+    rc = cudaMemcpy(biases, biases_, output_dim * sizeof(float), cudaMemcpyHostToDevice);
+    if(rc)
+        abortError("Fail Buffer Copy");
+}
+
+void linear_layer::forward(float *X, float *Result, size_t X_dim, size_t Result_dim, size_t batch_size, size_t pitch_X, size_t pitch_Result){
+    if (X_dim != input_dim)
+        abortError("Input size does not match linear layer parameters!");
+
+    int bsize = 32;
+    int w     = std::ceil((float)output_dim / bsize);
+    int h     = std::ceil((float)batch_size / bsize);
+
+    dim3 dimBlock(bsize, bsize);
+    dim3 dimGrid(w, h);
+
+    //linear
+    matrix_feedforward<<<dimGrid, dimBlock>>>(X, weights, biases, Result, input_dim, output_dim, batch_size, pitch_X, pitch_weights, pitch_Result);
+
+    if (cudaPeekAtLastError())
+        abortError("Computation Error"); 
+}
+
+void ReLU_layer::forward(float *X, float *Result, size_t X_dim, size_t batch_size, size_t pitch_X, size_t pitch_Result){
+    int bsize = 32;
+    int w     = std::ceil((float)X_dim / bsize);
+    int h     = std::ceil((float)batch_size / bsize);
+
+    dim3 dimBlock(bsize, bsize);
+    dim3 dimGrid(w, h);
+
+    matrix_RELU<<<dimGrid, dimBlock>>>(X, Result, X_dim, batch_size, pitch_X, pitch_Result);
 }
