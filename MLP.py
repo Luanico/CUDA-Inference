@@ -63,7 +63,7 @@ architectures = {
 
 for key, val in architectures.items():
     saveRandomModel(val, key[0], key[1], key[2])
-    model = loadONNXW(key, key[0], key[1], key[2]).to("cuda")
+    model = loadONNXW(val, key[0], key[1], key[2]).to("cuda")
     model.eval()
     average_inf_time = inference(model, key[0])
 
