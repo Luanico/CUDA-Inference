@@ -44,9 +44,10 @@ def loadONNXW(filename, INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE):
 
 
 def inference(model, INPUT_SIZE, batch_size):
-    a = time.time() * 1000
     input_tensor = torch.randn((batch_size, INPUT_SIZE)).to("cuda")
+    _ = model(input_tensor)
     INFERENCE_TIMES = 100
+    a = time.time() * 1000
     with torch.no_grad():
         [model(input_tensor) for _ in range(INFERENCE_TIMES)]
     torch.cuda.synchronize()
