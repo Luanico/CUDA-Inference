@@ -43,7 +43,7 @@ def loadONNXW(filename, INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE):
 
 
 
-def inference(model, INPUT_SIZE):
+def inference(model, INPUT_SIZE, batch_size):
     a = time.time() * 1000
     input_tensor = torch.randn((batch_size, INPUT_SIZE)).to("cuda")
     INFERENCE_TIMES = 100
@@ -65,6 +65,6 @@ for key, val in architectures.items():
     saveRandomModel(val, key[0], key[1], key[2])
     model = loadONNXW(val, key[0], key[1], key[2]).to("cuda")
     model.eval()
-    average_inf_time = inference(model, key[0])
+    average_inf_time = inference(model, key[0], key[3])
 
     print(f"Average pytorch inference time for model with architecure (input, hidden, output, batch) : {key} = {inference(model)} ms")
