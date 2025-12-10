@@ -61,7 +61,7 @@ architectures = {
     (32, 3, 16, 64) : "cnn_small.onnx",
     (64, 3, 32, 64) : "cnn_medium.onnx",
     (128, 3, 64, 64) : "cnn_large.onnx",
-    (224, 3, 128, 64) : "cnn_huge.onnx",
+    (128, 3, 128, 64) : "cnn_huge.onnx",
 }
 
 for key, val in architectures.items():
