@@ -67,4 +67,4 @@ for key, val in architectures.items():
     model.eval()
     average_inf_time = inference(model, key[0], key[3])
 
-    print(f"Average pytorch inference time for model with architecure (input, hidden, output, batch) : {key} = {inference(model)} ms")
+    print(f"Average pytorch inference time for model with architecure (input, hidden, output, batch) : {key} = {average_inf_time} ms")
