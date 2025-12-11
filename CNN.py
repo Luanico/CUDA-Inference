@@ -4,26 +4,26 @@ import onnx
 import time
 
 class CNN(torch.nn.Module):
-    def __init__(self, in_channel, out_channel, input_size, output_size=10):
+    def __init__(self):
         super().__init__()
-        self.conv1 = torch.nn.Conv2d(in_channel, out_channel, 3, padding=1)
+        self.conv1 = torch.nn.Conv2d(3, 6, 5, padding=2)
+        self.pool1 = torch.nn.MaxPool2d(2, 2)
         self.relu1 = torch.nn.ReLU()
-        self.maxpool = torch.nn.MaxPool2d(2, 2)
-        self.conv2 = torch.nn.Conv2d(out_channel, out_channel * 2, 3, padding=1)
+        self.conv2 = torch.nn.Conv2d(6, 16, 5, padding=2)
+        self.pool2 = torch.nn.MaxPool2d(2, 2)
         self.relu2 = torch.nn.ReLU()
-        
-        pooled_size = input_size // 2
-        self.fc1 = torch.nn.Linear(out_channel * 2 * pooled_size * pooled_size, 512)
+        self.fc1 = torch.nn.Linear(16 * 5 * 5, 120)
         self.relu3 = torch.nn.ReLU()
-        self.fc2 = torch.nn.Linear(512, 256)
+        self.fc2 = torch.nn.Linear(120, 84)
         self.relu4 = torch.nn.ReLU()
-        self.fc3 = torch.nn.Linear(256, output_size)
+        self.fc3 = torch.nn.Linear(84, 10)
 
     def forward(self, x):
         x = self.conv1(x)
+        x = self.pool1(x)
         x = self.relu1(x)
-        x = self.maxpool(x)
         x = self.conv2(x)
+        x = self.pool2(x)
         x = self.relu2(x)
         x = torch.flatten(x, 1)
         x = self.fc1(x)
@@ -36,20 +36,20 @@ class CNN(torch.nn.Module):
 
 
 
-def saveRandomModel(filename, input_size, in_channel, out_channel, batch_size):
-    modelPytorch = CNN(in_channel, out_channel, input_size)
-    dummy_input = torch.randn((batch_size, in_channel, input_size, input_size))
+def saveRandomModel(filename):
+    modelPytorch = CNN()
+    dummy_input = torch.randn((64, 3, 32, 32))
     torch.onnx.export(modelPytorch, dummy_input, filename, input_names=['input'], output_names=['output'])
     
     model = onnx.load(filename)
-    from onnx.external_data_helper import convert_model_to_external_data, load_external_data_for_model
+    from onnx.external_data_helper import load_external_data_for_model
     load_external_data_for_model(model, '.')
     onnx.save(model, filename, save_as_external_data=False)
 
-def loadONNXW(filename, input_size, in_channel, out_channel):
+def loadONNXW(filename):
     model = onnx.load(filename)
 
-    modelPytorch = CNN(in_channel, out_channel, input_size)
+    modelPytorch = CNN()
     modelPytorch.conv1.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[0]))
     modelPytorch.conv1.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[1]))
 
@@ -68,10 +68,8 @@ def loadONNXW(filename, input_size, in_channel, out_channel):
     return modelPytorch
 
 
-
-
-def inference(model, INPUT_SIZE, batch_size, in_channel):
-    input_tensor = torch.randn((batch_size, in_channel, INPUT_SIZE, INPUT_SIZE)).to("cuda")
+def inference(model):
+    input_tensor = torch.randn((64, 3, 32, 32)).to("cuda")
     _ = model(input_tensor)
     INFERENCE_TIMES = 100
     a = time.time() * 1000
@@ -82,17 +80,11 @@ def inference(model, INPUT_SIZE, batch_size, in_channel):
     return end / INFERENCE_TIMES
 
 
-architectures = {
-    (32, 3, 16, 64) : "cnn_small.onnx",
-    (64, 3, 32, 64) : "cnn_medium.onnx",
-    (128, 3, 64, 64) : "cnn_large.onnx",
-    (32, 3, 6, 64) : "cnn_fixed.onnx",
-}
+FILENAME = "cnn_fixed.onnx"
 
-for key, val in architectures.items():
-    saveRandomModel(val, key[0], key[1], key[2], key[3])
-    model = loadONNXW(val, key[0], key[1], key[2]).to("cuda")
-    model.eval()
-    average_inf_time = inference(model, key[0], key[3], key[1])
+saveRandomModel(FILENAME)
+model = loadONNXW(FILENAME).to("cuda")
+model.eval()
+average_inf_time = inference(model)
 
-    print(f"Average pytorch inference time for CNN with architecure (input_size, in_channel, out_channel, batch) : {key} = {average_inf_time} ms")
+print(f"Average pytorch inference time for CNN (LeNet-5 style, 32x32x3, batch=64): {average_inf_time} ms")
