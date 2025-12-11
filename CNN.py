@@ -50,11 +50,20 @@ def loadONNXW(filename, input_size, in_channel, out_channel):
     model = onnx.load(filename)
 
     modelPytorch = CNN(in_channel, out_channel, input_size)
-    modelPytorch.conv.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[0]))
-    modelPytorch.conv.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[1]))
+    modelPytorch.conv1.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[0]))
+    modelPytorch.conv1.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[1]))
 
-    modelPytorch.output.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[2]))
-    modelPytorch.output.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[3]))
+    modelPytorch.conv2.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[2]))
+    modelPytorch.conv2.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[3]))
+
+    modelPytorch.fc1.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[4]))
+    modelPytorch.fc1.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[5]))
+
+    modelPytorch.fc2.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[6]))
+    modelPytorch.fc2.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[7]))
+
+    modelPytorch.fc3.weight.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[8]))
+    modelPytorch.fc3.bias.data = torch.from_numpy(onnx.numpy_helper.to_array(model.graph.initializer[9]))
 
     return modelPytorch
 
