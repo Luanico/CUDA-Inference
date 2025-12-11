@@ -17,7 +17,7 @@ private:
     size_t input_channels = 3;
     size_t layer2_channels = 6;
     size_t layer3_channels = 16;
-    size_t linear1_in_dim = 16 * 5 * 5;
+    size_t linear1_in_dim = 16 * 8 * 8;
     size_t linear2_in_dim = 120;
     size_t linear3_in_dim = 84;
     size_t output_dim = 10;
