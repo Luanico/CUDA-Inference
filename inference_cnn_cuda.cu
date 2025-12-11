@@ -27,20 +27,20 @@ int main(int argc, char* argv[])
 
     int pooled_size = INPUT_SIZE / 2;
     
-    convolution_layer conv1(INPUT_CHANNELS, CONV1_OUT_CHANNELS, 3, 1);
-    conv1.load_weights(weights[0].data(), weights[1].data());
+    convolution_layer conv1(INPUT_CHANNELS, CONV1_OUT_CHANNELS, 1, 1, 3);
+    conv1.load_weights(weights[0].data(), weights[1].data(), INPUT_CHANNELS, CONV1_OUT_CHANNELS, 3);
     
-    convolution_layer conv2(CONV1_OUT_CHANNELS, CONV2_OUT_CHANNELS, 3, 1);
-    conv2.load_weights(weights[2].data(), weights[3].data());
+    convolution_layer conv2(CONV1_OUT_CHANNELS, CONV2_OUT_CHANNELS, 1, 1, 3);
+    conv2.load_weights(weights[2].data(), weights[3].data(), CONV1_OUT_CHANNELS, CONV2_OUT_CHANNELS, 3);
     
-    linear_layer fc1(CONV2_OUT_CHANNELS * pooled_size * pooled_size, FC1_OUT, BATCH_SIZE);
-    fc1.load_weights(weights[4].data(), weights[5].data());
+    linear_layer fc1(CONV2_OUT_CHANNELS * pooled_size * pooled_size, FC1_OUT);
+    fc1.load_weights(weights[4].data(), weights[5].data(), CONV2_OUT_CHANNELS * pooled_size * pooled_size, FC1_OUT);
     
-    linear_layer fc2(FC1_OUT, FC2_OUT, BATCH_SIZE);
-    fc2.load_weights(weights[6].data(), weights[7].data());
+    linear_layer fc2(FC1_OUT, FC2_OUT);
+    fc2.load_weights(weights[6].data(), weights[7].data(), FC1_OUT, FC2_OUT);
     
-    linear_layer fc3(FC2_OUT, OUTPUT_DIM, BATCH_SIZE);
-    fc3.load_weights(weights[8].data(), weights[9].data());
+    linear_layer fc3(FC2_OUT, OUTPUT_DIM);
+    fc3.load_weights(weights[8].data(), weights[9].data(), FC2_OUT, OUTPUT_DIM);
     
     CNN cnn(&conv1, &conv2, &fc1, &fc2, &fc3);
 
