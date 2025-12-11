@@ -86,7 +86,6 @@ architectures = {
     (32, 3, 16, 64) : "cnn_small.onnx",
     (64, 3, 32, 64) : "cnn_medium.onnx",
     (128, 3, 64, 64) : "cnn_large.onnx",
-    (128, 3, 128, 64) : "cnn_huge.onnx",
 }
 
 for key, val in architectures.items():
@@ -95,4 +94,4 @@ for key, val in architectures.items():
     model.eval()
     average_inf_time = inference(model, key[0], key[3], key[1])
 
-    print(f"Average pytorch inference time for CNN with architecure (input, hidden, output, batch) : {key} = {average_inf_time} ms")
+    print(f"Average pytorch inference time for CNN with architecure (input_size, in_channel, out_channel, batch) : {key} = {average_inf_time} ms")
