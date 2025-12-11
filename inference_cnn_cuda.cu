@@ -10,6 +10,7 @@ const int INPUT_SIZE = 32;
 const int INPUT_CHANNELS = 3;
 const int CONV1_OUT_CHANNELS = 6;
 const int CONV2_OUT_CHANNELS = 16;
+const int FC1_IN = 16 * 8 * 8;
 const int FC1_OUT = 120;
 const int FC2_OUT = 84;
 const int OUTPUT_DIM = 10;
@@ -33,8 +34,8 @@ int main(int argc, char* argv[])
     convolution_layer conv2(CONV1_OUT_CHANNELS, CONV2_OUT_CHANNELS, 1, 1, 3);
     conv2.load_weights(weights[2].data(), weights[3].data(), CONV1_OUT_CHANNELS, CONV2_OUT_CHANNELS, 3);
     
-    linear_layer fc1(CONV2_OUT_CHANNELS * pooled_size * pooled_size, FC1_OUT);
-    fc1.load_weights(weights[4].data(), weights[5].data(), CONV2_OUT_CHANNELS * pooled_size * pooled_size, FC1_OUT);
+    linear_layer fc1(FC1_IN, FC1_OUT);
+    fc1.load_weights(weights[4].data(), weights[5].data(), FC1_IN, FC1_OUT);
     
     linear_layer fc2(FC1_OUT, FC2_OUT);
     fc2.load_weights(weights[6].data(), weights[7].data(), FC1_OUT, FC2_OUT);

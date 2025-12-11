@@ -12,7 +12,7 @@ class CNN(torch.nn.Module):
         self.conv2 = torch.nn.Conv2d(6, 16, 5, padding=2)
         self.pool2 = torch.nn.MaxPool2d(2, 2)
         self.relu2 = torch.nn.ReLU()
-        self.fc1 = torch.nn.Linear(16 * 5 * 5, 120)
+        self.fc1 = torch.nn.Linear(16 * 8 * 8, 120)
         self.relu3 = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(120, 84)
         self.relu4 = torch.nn.ReLU()
