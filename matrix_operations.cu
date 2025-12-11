@@ -1,6 +1,7 @@
 #include "matrix_operations.h"
 
 #include "error_utils.h"
+#include <sstream>
 
 /**
  * @brief CUDA kernel that performs element-wise matrix addition on the GPU
@@ -164,8 +165,11 @@ linear_layer::~linear_layer(){
 }
 
 void linear_layer::load_weights(float *weights_, float *biases_, size_t input_dim_, size_t output_dim_){
-     if (input_dim_ != input_dim)
-        abortError("Input dim does not match linear layer parameters!");
+    if (input_dim_ != input_dim){
+        std::stringstream ss;
+        ss << "Input dim does not match linear layer parameters! Got " << input_dim_ << "; Expected " << input_dim;
+        abortError(ss.str().c_str());
+    }
     if (output_dim_ != output_dim)
         abortError("Output dim does not match lineaer layer parameters!");
     

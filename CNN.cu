@@ -41,8 +41,6 @@ void CNN::forward(float *X, float *Result, size_t X_width, size_t X_height, size
     if (rc)
         abortError("Fail Buffer Allocation");
 
-    spdlog::info("Starting layer 1");
-
     size_t flat_dim = layer2_channels * pool1_out_width * pool1_out_height;
     // Calculate forward
     conv1->forward(X, res_conv1, X_width, X_height, X_channels, X_width, X_height, layer2_channels, batch_size);
@@ -51,7 +49,7 @@ void CNN::forward(float *X, float *Result, size_t X_width, size_t X_height, size
 
 
     flat_dim = layer3_channels * pool2_out_width * pool2_out_height;
-    spdlog::info("Starting layer 2");
+
     conv2->forward(res_pool1, res_conv2, pool1_out_width, pool1_out_height, layer2_channels, pool1_out_width, pool1_out_height, layer3_channels, batch_size);
     pool.forward(res_conv2, res_pool2, pool1_out_width, pool1_out_height, layer3_channels, pool2_out_width, pool2_out_height, batch_size);
     relu.forward(res_pool2, res_pool2, layer3_channels * pool2_out_width * pool2_out_height, batch_size, flat_dim * sizeof(float), flat_dim * sizeof(float));
@@ -63,17 +61,14 @@ void CNN::forward(float *X, float *Result, size_t X_width, size_t X_height, size
     size_t fc2_out_size = linear3_in_dim; // 84
     size_t fc3_out_size = output_dim;     // 10
 
-    spdlog::info("Starting fc layer 1");
     fc1->forward(res_pool2, res_fc1, layer3_channels * pool2_out_width * pool2_out_height, linear2_in_dim, batch_size,
          pool2_flat_size * sizeof(float),  fc1_out_size * sizeof(float));
     relu.forward(res_fc1, res_fc1, linear2_in_dim, batch_size, fc1_out_size * sizeof(float), fc1_out_size * sizeof(float));
 
-    spdlog::info("Starting fc layer 2");
     fc2->forward(res_fc1, res_fc2, linear2_in_dim, linear3_in_dim, batch_size,
         fc1_out_size * sizeof(float), fc2_out_size * sizeof(float));
     relu.forward(res_fc2, res_fc2, linear3_in_dim, batch_size, fc2_out_size * sizeof(float), fc2_out_size * sizeof(float));
 
-    spdlog::info("Starting fc layer 3");
     fc3->forward(res_fc2, Result, linear3_in_dim, output_dim, batch_size,
         fc2_out_size * sizeof(float), fc3_out_size * sizeof(float));
 }

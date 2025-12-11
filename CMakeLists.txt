@@ -30,6 +30,8 @@ enable_testing()
 # Shared library for matrix operations (used by both main and tests)
 add_library(matrix_ops STATIC
   matrix_operations.cu
+  convolutions.cu
+  CNN.cu
   cpu_operations.cpp
   mlp.cu
 )
@@ -69,6 +71,36 @@ target_link_libraries(mlp_tests PRIVATE
 )
 set_target_properties(mlp_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
+# Test 3: convolutions
+add_executable(convolutions_tests convolutions_test.cu)
+target_link_libraries(convolutions_tests PRIVATE 
+    matrix_ops
+    utils
+    GTest::gtest_main
+)
+set_target_properties(convolutions_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+
+# Test 4: conv layer
+add_executable(conv_layer_tests conv_layer_tests.cu)
+target_link_libraries(conv_layer_tests PRIVATE
+    matrix_ops
+    utils
+    GTest::gtest_main
+)
+set_target_properties(conv_layer_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+
+# Test 5: cnn
+add_executable(cnn_tests CNN_tests.cu)
+target_link_libraries(cnn_tests PRIVATE 
+    matrix_ops
+    utils
+    GTest::gtest_main
+)
+set_target_properties(cnn_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+
 
 if(DEFINED ENV{CONDA_PREFIX})
     message(STATUS "Adding Conda prefix to search paths: $ENV{CONDA_PREFIX}")
@@ -92,7 +124,7 @@ target_link_libraries(inference_cuda PRIVATE
     absl::strings
 )
 
-add_executable(inference_cnn_cuda inference_cnn_cuda.cu load_onnx.cpp onnx.pb.cc CNN.cu convolutions.cu)
+add_executable(inference_cnn_cuda inference_cnn_cuda.cu load_onnx.cpp onnx.pb.cc)
 target_link_libraries(inference_cnn_cuda PRIVATE 
     matrix_ops
     utils
@@ -107,3 +139,6 @@ target_link_libraries(inference_cnn_cuda PRIVATE
 include(GoogleTest)
 gtest_discover_tests(matrix_tests)
 gtest_discover_tests(mlp_tests)
+gtest_discover_tests(convolutions_tests)
+gtest_discover_tests(conv_layer_tests)
+gtest_discover_tests(cnn_tests)
