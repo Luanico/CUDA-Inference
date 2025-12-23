@@ -1,7 +1,7 @@
 #include "mlp.h"
 
-#include "error_utils.h"
-#include "matrix_operations.h"
+#include "utils/error_utils.h"
+#include "operations/matrix_operations.h"
 
 
 MLP::MLP(size_t input_dim_, size_t hidden_dim_, size_t output_dim_, size_t batch_size_, bool init_zeros) 

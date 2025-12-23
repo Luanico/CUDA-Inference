@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include <cstdlib>
 
-#include "cpu_operations.h"
-#include "matrix_operations.h"
+#include "cpu/cpu_operations.h"
+#include "operations/matrix_operations.h"
 
 TEST(MatrixAdditionTest, BasicTest) {
     int SIZE_X = 16;

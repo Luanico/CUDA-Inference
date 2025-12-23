@@ -1,6 +1,6 @@
 #include "matrix_operations.h"
 
-#include "error_utils.h"
+#include "utils/error_utils.h"
 #include <sstream>
 
 /**

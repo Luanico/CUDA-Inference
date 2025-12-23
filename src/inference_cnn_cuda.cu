@@ -1,8 +1,7 @@
-#include <cuda_runtime.h>
-#include "load_onnx.h"
-#include "CNN.h"
-#include "convolutions.h"
-#include "matrix_operations.h"
+#include "utils/load_onnx.h"
+#include "models/CNN.h"
+#include "operations/convolutions.h"
+#include "operations/matrix_operations.h"
 #include <stdio.h>
 #include <chrono>
 

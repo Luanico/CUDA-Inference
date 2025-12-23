@@ -1,5 +1,4 @@
 #include "CNN.h"
-#include "cpu_operations.h"
 
 CNN::CNN(convolution_layer *conv1_, convolution_layer *conv2_, linear_layer *fc1_, linear_layer *fc2_, linear_layer *fc3_)
     : conv1(conv1_), conv2(conv2_), fc1(fc1_), fc2(fc2_), fc3(fc3_), pool(2, 2), relu() {

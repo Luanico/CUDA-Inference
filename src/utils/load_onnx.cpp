@@ -1,3 +1,5 @@
+#include "load_onnx.h"
+
 #include <fstream>
 #include <cassert>
 #include <iostream> 
@@ -5,7 +7,6 @@
 #include <string>    
 #include <cstring>
 
-#include "onnx.pb.h"
 
 std::vector<std::vector<float>> getWeights(const google::protobuf::RepeatedPtrField<onnx::TensorProto>& tensors)
 {

@@ -3,9 +3,9 @@
 
 #include <stdlib.h>
 
-#include "error_utils.h"
-#include "convolutions.h"
-#include "matrix_operations.h"
+#include "utils/error_utils.h"
+#include "operations/convolutions.h"
+#include "operations/matrix_operations.h"
 
 class CNN{
 private:

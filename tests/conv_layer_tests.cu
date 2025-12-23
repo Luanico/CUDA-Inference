@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "error_utils.h"
-#include "convolutions.h"
-#include "cpu_operations.h"
+#include "utils/error_utils.h"
+#include "operations/convolutions.h"
+#include "cpu/cpu_operations.h"
 
 TEST(ConvolutionLayerTest, BasicForwardPass) {
     // Layer parameters

@@ -1,121 +1,107 @@
 cmake_minimum_required(VERSION 3.18)
-project(my_cuda_project CUDA CXX)
+project(my_cuda_project LANGUAGES CUDA CXX)
 
-# Set C++ standard
+# ------------------------------------------------------------------------------
+# Global configuration
+# ------------------------------------------------------------------------------
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+enable_testing()
 include(FetchContent)
 
-# Fetch spdlog
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
+
+# spdlog
 FetchContent_Declare(
-  spdlog
-  URL https://github.com/gabime/spdlog/archive/v1.9.2.tar.gz
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    spdlog
+    URL https://github.com/gabime/spdlog/archive/v1.9.2.tar.gz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(spdlog)
 
-# Fetch Google Test
+# GoogleTest
 FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.14.0
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.14.0
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# Enable testing
-enable_testing()
-
-# Shared library for matrix operations (used by both main and tests)
-add_library(matrix_ops STATIC
-  matrix_operations.cu
-  convolutions.cu
-  CNN.cu
-  cpu_operations.cpp
-  mlp.cu
-)
-
-target_link_libraries(matrix_ops PUBLIC spdlog::spdlog)
-set_target_properties(matrix_ops PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-add_library(utils STATIC
-  error_utils.cu
-)
-
-target_link_libraries(utils PUBLIC spdlog::spdlog)
-set_target_properties(utils PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-
-# Main executable
-add_executable(out main.cu)
-target_link_libraries(out PRIVATE matrix_ops utils spdlog::spdlog)
-set_target_properties(out PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-
-# Test 1: Basic matrix operations
-add_executable(matrix_tests basic_operations_test.cu)
-target_link_libraries(matrix_tests PRIVATE 
-  matrix_ops
-  utils
-  GTest::gtest_main
-)
-set_target_properties(matrix_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-# Test 2: MLP
-add_executable(mlp_tests MLP_test.cu)
-target_link_libraries(mlp_tests PRIVATE 
-    matrix_ops
-    utils
-    GTest::gtest_main
-)
-set_target_properties(mlp_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-# Test 3: convolutions
-add_executable(convolutions_tests convolutions_test.cu)
-target_link_libraries(convolutions_tests PRIVATE 
-    matrix_ops
-    utils
-    GTest::gtest_main
-)
-set_target_properties(convolutions_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-
-# Test 4: conv layer
-add_executable(conv_layer_tests conv_layer_tests.cu)
-target_link_libraries(conv_layer_tests PRIVATE
-    matrix_ops
-    utils
-    GTest::gtest_main
-)
-set_target_properties(conv_layer_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-
-# Test 5: cnn
-add_executable(cnn_tests CNN_tests.cu)
-target_link_libraries(cnn_tests PRIVATE 
-    matrix_ops
-    utils
-    GTest::gtest_main
-)
-set_target_properties(cnn_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-
-
+# Conda (optional)
 if(DEFINED ENV{CONDA_PREFIX})
-    message(STATUS "Adding Conda prefix to search paths: $ENV{CONDA_PREFIX}")
+    message(STATUS "Using Conda prefix: $ENV{CONDA_PREFIX}")
     list(APPEND CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX}")
-    include_directories("$ENV{CONDA_PREFIX}/include")
-    link_directories("$ENV{CONDA_PREFIX}/lib")
 endif()
 
+# Protobuf / Abseil
 find_package(Protobuf REQUIRED)
 find_package(absl REQUIRED)
-include_directories(${Protobuf_INCLUDE_DIRS})
 
-add_executable(inference_cuda inference_cuda.cu load_onnx.cpp onnx.pb.cc)
-target_link_libraries(inference_cuda PRIVATE 
-    matrix_ops
+# ------------------------------------------------------------------------------
+# Core libraries
+# ------------------------------------------------------------------------------
+
+add_library(core_ops STATIC
+    src/operations/matrix_operations.cu
+    src/operations/convolutions.cu
+
+    src/models/CNN.cu
+    src/models/mlp.cu
+
+    src/cpu/cpu_operations.cpp
+)
+
+target_include_directories(core_ops PUBLIC src)
+target_link_libraries(core_ops PUBLIC spdlog::spdlog)
+set_target_properties(core_ops PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+# ------------------------------------------------------------------------------
+# Utils library
+# ------------------------------------------------------------------------------
+
+add_library(utils STATIC
+    src/utils/error_utils.cu
+    src/utils/load_onnx.cpp
+)
+
+target_include_directories(utils PUBLIC
+    src
+    ${Protobuf_INCLUDE_DIRS}
+)
+target_link_libraries(utils PUBLIC
+    spdlog::spdlog
+    ${Protobuf_LIBRARIES}
+)
+set_target_properties(utils PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+# ------------------------------------------------------------------------------
+# Main executable
+# ------------------------------------------------------------------------------
+
+add_executable(main_cuda
+    src/main.cu
+)
+
+target_link_libraries(main_cuda PRIVATE core_ops utils)
+set_target_properties(main_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+# ------------------------------------------------------------------------------
+# Inference executables
+# ------------------------------------------------------------------------------
+
+add_executable(inference_cuda
+    src/inference_cuda.cu
+    src/utils/load_onnx.cpp
+    src/utils/proto/onnx.pb.cc
+)
+
+target_link_libraries(inference_cuda PRIVATE
+    core_ops
     utils
     ${Protobuf_LIBRARIES}
     absl::log_internal_check_op
@@ -124,9 +110,14 @@ target_link_libraries(inference_cuda PRIVATE
     absl::strings
 )
 
-add_executable(inference_cnn_cuda inference_cnn_cuda.cu load_onnx.cpp onnx.pb.cc)
-target_link_libraries(inference_cnn_cuda PRIVATE 
-    matrix_ops
+add_executable(inference_cnn_cuda
+    src/inference_cnn_cuda.cu
+    src/utils/load_onnx.cpp
+    src/utils/proto/onnx.pb.cc
+)
+
+target_link_libraries(inference_cnn_cuda PRIVATE
+    core_ops
     utils
     ${Protobuf_LIBRARIES}
     absl::log_internal_check_op
@@ -135,10 +126,25 @@ target_link_libraries(inference_cnn_cuda PRIVATE
     absl::strings
 )
 
-# Register tests with CTest
+# ------------------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------------------
+
 include(GoogleTest)
-gtest_discover_tests(matrix_tests)
-gtest_discover_tests(mlp_tests)
-gtest_discover_tests(convolutions_tests)
-gtest_discover_tests(conv_layer_tests)
-gtest_discover_tests(cnn_tests)
+
+function(add_cuda_test target source)
+    add_executable(${target} ${source})
+    target_link_libraries(${target} PRIVATE
+        core_ops
+        utils
+        GTest::gtest_main
+    )
+    set_target_properties(${target} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    gtest_discover_tests(${target})
+endfunction()
+
+add_cuda_test(matrix_tests        tests/basic_operations_test.cu)
+add_cuda_test(mlp_tests           tests/MLP_test.cu)
+add_cuda_test(convolutions_tests  tests/convolutions_test.cu)
+add_cuda_test(conv_layer_tests    tests/conv_layer_tests.cu)
+add_cuda_test(cnn_tests           tests/CNN_tests.cu)

@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include <cstdlib>
 
-#include "cpu_operations.h"
-#include "convolutions.h"
+#include "cpu/cpu_operations.h"
+#include "operations/convolutions.h"
 
 
 TEST(ConvolutionTest, BasicTest3x3) {

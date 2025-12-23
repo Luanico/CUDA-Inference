@@ -2,9 +2,9 @@
 #include <gtest/gtest.h>
 #include <cstdlib>
 
-#include "mlp.h"
-#include "cpu_operations.h"
-#include "matrix_operations.h"
+#include "models/mlp.h"
+#include "cpu/cpu_operations.h"
+#include "operations/matrix_operations.h"
 
 TEST(MLPTest, BasicForwardPass) {
     int batch_size = 4;

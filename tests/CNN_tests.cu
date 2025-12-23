@@ -4,8 +4,8 @@
 #include <cmath>
 #include <random>
 
-#include "CNN.h"
-#include "cpu_operations.h"
+#include "models/CNN.h"
+#include "cpu/cpu_operations.h"
 
 // =================================================================================
 // HELPER: CPU Implementation of the full CNN for verification

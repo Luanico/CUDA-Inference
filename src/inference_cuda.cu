@@ -1,6 +1,5 @@
-#include <cuda_runtime.h>
-#include "load_onnx.h"
-#include "mlp.h"
+#include "utils/load_onnx.h"
+#include "models/mlp.h"
 #include <stdio.h>
 #include <chrono>
 #include <map>

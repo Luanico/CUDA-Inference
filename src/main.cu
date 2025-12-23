@@ -1,7 +1,7 @@
-#include "matrix_operations.h"
-#include "cpu_operations.h"
-#include "error_utils.h"
-#include "convolutions.h"
+#include "operations/matrix_operations.h"
+#include "cpu/cpu_operations.h"
+#include "utils/error_utils.h"
+#include "operations/convolutions.h"
 
 #include <spdlog/spdlog.h>
 #include <cassert>
