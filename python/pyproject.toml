@@ -1,0 +1,20 @@
+[project]
+name = "python"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "luanico",email = "lucasmu07@gmail.com"}
+]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "torch (>=2.10.0,<3.0.0)",
+    "numpy (>=2.4.2,<3.0.0)",
+    "onnx (>=1.20.1,<2.0.0)",
+    "onnx2torch (>=1.5.15,<2.0.0)",
+    "onnxscript (>=0.6.2,<0.7.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
