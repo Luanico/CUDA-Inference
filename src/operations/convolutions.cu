@@ -45,6 +45,121 @@ __global__ void naive_convolution(float *in, float *out, float *kernel, size_t i
     }
 }
 
+__global__ void naive_convolution_with_shared_kernel(float *in, float *out, float *kernel, size_t im_width, size_t im_height, size_t kernel_width,
+    size_t pitch_in, size_t pitch_out, size_t pitch_kernel){
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+    extern __shared__ float kernel_shared[];
+    //Load kernel in shared memory
+    if (x == 0 && y == 0){
+        for (size_t i = 0; i < kernel_width; i++){
+            float* row_kernel = (float*)((char*)kernel + i * pitch_kernel);
+            for (size_t j = 0; j < kernel_width; j++){
+                kernel_shared[i * kernel_width + j] = row_kernel[j];
+            }
+        }
+    }
+    else if (x >= im_width || y >= im_height)
+        return;
+
+    __syncthreads();
+
+    size_t offset = (kernel_width - 1) / 2;
+
+    float* row_out = (float*)((char*)out + y * pitch_out);
+    row_out[x] = 0;
+    for (size_t i = 0; i < kernel_width; i++){
+        if (y + i < offset || y + i >= offset + im_height)
+            continue;
+        float* row_in = (float*)((char*)in + (y - offset + i) * pitch_in);
+        for (size_t j = 0; j < kernel_width; j++){
+            float val_in = 0;
+            // for padding
+            if (x + j >= offset && x + j < offset + im_width)
+                val_in = row_in[(x - offset + j)];
+
+            row_out[x] += val_in * kernel_shared[i * kernel_width + j];
+        }
+    }
+}
+
+
+#define MAX_FILTER_SIZE 11
+__constant__ float kFilter_d[MAX_FILTER_SIZE][MAX_FILTER_SIZE];
+
+__global__ void naive_convolution_with_const_kernel(float *in, float *out, size_t im_width, size_t im_height, size_t kernel_width,
+    size_t pitch_in, size_t pitch_out){
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+    // filter already in const (copied before launching this kernel) - no need to load it. rest is the same
+
+    size_t offset = (kernel_width - 1) / 2;
+
+    float* row_out = (float*)((char*)out + y * pitch_out);
+    row_out[x] = 0;
+    for (size_t i = 0; i < kernel_width; i++){
+        if (y + i < offset || y + i >= offset + im_height)
+            continue;
+        float* row_in = (float*)((char*)in + (y - offset + i) * pitch_in);
+        for (size_t j = 0; j < kernel_width; j++){
+            float val_in = 0;
+            // for padding
+            if (x + j >= offset && x + j < offset + im_width)
+                val_in = row_in[(x - offset + j)];
+
+            row_out[x] += val_in * kFilter_d[i][j];
+        }
+    }
+}
+
+#define BLOCK_SIZE 16m
+
+template<int K_size>
+__global__ void naive_convolution_with_const_kernel_and_tiling(float *in, float *out, size_t im_width, size_t im_height, size_t kernel_width,
+    size_t pitch_in, size_t pitch_out){
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+
+    constexpr int R = K_size / 2;
+    constexpr int TILE_SIZE = BLOCK_SIZE + K_size - 1;
+    __shared__ float tile[BLOCK_SIZE][BLOCK_SIZE];
+
+    // for stride implementation if i want later
+    constexpr int STRIDE = 1;
+
+    // Base input coordinates (top-left of the tile)
+    int in_x_base = blockDim.x * TILE_SIZE * STRIDE - R;
+    int in_y_base = blockDim.y * TILE_SIZE * STRIDE - R;
+    
+    for (int y = threadIdx.y; y < TILE_SIZE; y += blockDim.y){
+        int in_y = in_y_base + y;
+        float value = 0.0f;
+        if (in_y >= 0 && in_y < im_height) {
+            for (int x = threadIdx.x; x < TILE_SIZE; x += blockDim.x){
+                int in_x = in_x_base + x;
+                if (in_x >= 0 && in_x < im_width){
+                    float* row_in = (float*)((char*)in + in_y * pitch_in);
+                    value = row_in[in_x];
+                }
+            }   
+        }
+        tile[y][x] = value;
+    }
+
+    __syncthreads();
+
+    float* row_out = (float*)((char*)out + y * pitch_out);
+    row_out[x] = 0;
+    for (size_t i = 0; i < kernel_width; i++){
+        for (size_t j = 0; j < kernel_width; j++){
+            row_out[x] += tile[x + i][y + j] * kFilter_d[i][j];
+            //padding should be handled by the tiling process so no need to put it there
+        }
+    }
+}
+
 /**
  * @brief CUDA kernel that performs 2D max pooling on the GPU (internal)
  * @details Reduces spatial dimensions by taking maximum value in each pooling window.
